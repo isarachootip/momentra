@@ -1,0 +1,105 @@
+services:
+  # 1. Reverse Proxy (Caddy)
+  proxy:
+    image: caddy:2-alpine
+    container_name: momentra_proxy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN:-api.momentra.app}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+      - web
+    networks:
+      - momentra_prod_net
+
+  # 2. Production Web Frontend (Next.js 15)
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: momentra_web_prod
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+    networks:
+      - momentra_prod_net
+
+  # 3. Production API Core
+  app:
+    image: ghcr.io/momentra/momentra-backend:latest
+    container_name: momentra_api_prod
+    restart: always
+    environment:
+      - PORT=3001
+    env_file:
+      - .env.production
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - momentra_prod_net
+
+  # 3. Production Background Worker (BullMQ + Sharp + ClamAV Client)
+  worker:
+    image: ghcr.io/momentra/momentra-backend:latest
+    container_name: momentra_worker_prod
+    restart: always
+    command: ["node", "dist/src/worker.js"]
+    env_file:
+      - .env.production
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - momentra_prod_net
+
+  # 4. Redis Queue & Cache
+  redis:
+    image: redis:7-alpine
+    container_name: momentra_redis_prod
+    restart: always
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    volumes:
+      - redis_prod_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - momentra_prod_net
+
+volumes:
+  caddy_data:
+  caddy_config:
+  redis_prod_data:
+
+networks:
+  momentra_prod_net:
+    driver: bridge

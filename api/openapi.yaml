@@ -1,0 +1,1922 @@
+openapi: 3.1.0
+info:
+  title: Momentra Core API (HDAM)
+  version: 1.0.0
+  description: |
+    API-first Specification for **Momentra** (Historical Digital Asset Management - HDAM).
+    Binds digital assets, links, notes, and events to historical event dates with uncertainty support,
+    multi-tenant workspace isolation, and high-performance timeline queries.
+  contact:
+    name: Momentra Engineering Architecture Team
+    email: api@momentra.app
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://momentra.app/api/v1
+    description: Production Environment
+  - url: http://localhost:3000/api/v1
+    description: Local Development Server
+
+tags:
+  - name: Auth & Me
+    description: Authentication, session management, and current user profile
+  - name: Workspaces
+    description: Workspace management and member access control
+  - name: Items
+    description: Timeline items (assets, links, notes, events) and trash management
+  - name: Assets
+    description: Digital asset uploads, downloads, versions, and derivatives
+  - name: Links
+    description: External reference links and OpenGraph metadata scraping
+  - name: Timeline
+    description: Historical timeline querying, zoom scales, and clustering
+  - name: Search
+    description: Full-text search and multi-criteria faceted filtering
+  - name: Collections
+    description: Thematic collections and manual item curation
+  - name: Milestones
+    description: Timeline milestones and historical turning points
+  - name: Shares
+    description: Passcode-protected external sharing links
+  - name: Exports
+    description: Data and asset archive exports
+  - name: Audit Logs
+    description: Immutable audit trail inspection
+
+security:
+  - cookieAuth: []
+    workspaceHeader: []
+
+paths:
+  # ==========================================================================
+  # 1. Authentication & User Profile
+  # ==========================================================================
+  /auth/login:
+    post:
+      summary: User Login (Password or OIDC)
+      operationId: login
+      tags: [Auth & Me]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful; session cookie established
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: momentra_session=s%3A7a1b...; Path=/; HttpOnly; Secure; SameSite=Lax
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/refresh:
+    post:
+      summary: Refresh Current Session
+      operationId: refreshSession
+      tags: [Auth & Me]
+      responses:
+        '200':
+          description: Session refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/logout:
+    post:
+      summary: User Logout
+      operationId: logout
+      tags: [Auth & Me]
+      responses:
+        '204':
+          description: Session terminated successfully
+
+  /me:
+    get:
+      summary: Get Current User Profile & Workspaces
+      operationId: getMe
+      tags: [Auth & Me]
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ==========================================================================
+  # 2. Workspaces & Members
+  # ==========================================================================
+  /workspaces:
+    get:
+      summary: List User's Workspaces
+      operationId: listWorkspaces
+      tags: [Workspaces]
+      responses:
+        '200':
+          description: Array of accessible workspaces
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkspaceResponse'
+    post:
+      summary: Create New Workspace
+      operationId: createWorkspace
+      tags: [Workspaces]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceCreateRequest'
+      responses:
+        '201':
+          description: Workspace created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+
+  /workspaces/{id}:
+    parameters:
+      - $ref: '#/components/parameters/WorkspaceIdPathParam'
+    get:
+      summary: Get Workspace Details & Settings
+      operationId: getWorkspace
+      tags: [Workspaces]
+      responses:
+        '200':
+          description: Workspace object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    patch:
+      summary: Update Workspace Settings (Owner/Admin)
+      operationId: updateWorkspace
+      tags: [Workspaces]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceUpdateRequest'
+      responses:
+        '200':
+          description: Workspace updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    delete:
+      summary: Soft Delete Workspace (Owner Only)
+      operationId: deleteWorkspace
+      tags: [Workspaces]
+      responses:
+        '204':
+          description: Workspace soft-deleted
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /workspaces/{id}/members:
+    parameters:
+      - $ref: '#/components/parameters/WorkspaceIdPathParam'
+    get:
+      summary: List Members of Workspace
+      operationId: listWorkspaceMembers
+      tags: [Workspaces]
+      responses:
+        '200':
+          description: List of members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkspaceMemberResponse'
+
+  /workspaces/{id}/members/invite:
+    parameters:
+      - $ref: '#/components/parameters/WorkspaceIdPathParam'
+    post:
+      summary: Invite Member via Email (Admin/Owner)
+      operationId: inviteWorkspaceMember
+      tags: [Workspaces]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberInviteRequest'
+      responses:
+        '201':
+          description: Invitation sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceMemberResponse'
+        '409':
+          description: User is already a member
+
+  /workspaces/{id}/members/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/WorkspaceIdPathParam'
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      summary: Change Member Role (Admin/Owner)
+      operationId: updateMemberRole
+      tags: [Workspaces]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [owner, admin, contributor, viewer]
+      responses:
+        '200':
+          description: Role updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceMemberResponse'
+    delete:
+      summary: Remove Member from Workspace
+      operationId: removeMember
+      tags: [Workspaces]
+      responses:
+        '204':
+          description: Member removed
+
+  # ==========================================================================
+  # 3. Timeline Items (Parent Entity)
+  # ==========================================================================
+  /items:
+    get:
+      summary: List Items with Cursor Pagination
+      operationId: listItems
+      tags: [Items]
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [asset, link, note, event]
+        - name: from
+          in: query
+          description: Start UTC date filter (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: End UTC date filter (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+        - name: cursor
+          in: query
+          description: Opaque pagination cursor
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Paginated item list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedItemsResponse'
+
+    post:
+      summary: Create New Timeline Item (Note, Event, or Item Shell)
+      operationId: createItem
+      tags: [Items]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemCreateRequest'
+      responses:
+        '201':
+          description: Item created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+
+  /items/bulk-update:
+    post:
+      summary: Bulk Update Tags or Collections for Multiple Items
+      operationId: bulkUpdateItems
+      tags: [Items]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkUpdateRequest'
+      responses:
+        '200':
+          description: Items updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated_count:
+                    type: integer
+                    example: 15
+
+  /items/trash:
+    get:
+      summary: List Trashed Items (Soft Deleted)
+      operationId: listTrashedItems
+      tags: [Items]
+      responses:
+        '200':
+          description: Items in trash with 30-day purge countdown
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrashedItemResponse'
+
+  /items/trash/purge:
+    delete:
+      summary: Permanently Purge All Trashed Items Older Than 30 Days (Admin Only)
+      operationId: purgeTrash
+      tags: [Items]
+      responses:
+        '200':
+          description: Purge job executed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  purged_count:
+                    type: integer
+                    example: 8
+
+  /items/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ItemIdPathParam'
+    get:
+      summary: Get Item Detail with Associated Assets/Links/Tags
+      operationId: getItem
+      tags: [Items]
+      responses:
+        '200':
+          description: Complete item details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    patch:
+      summary: Update Item Metadata & Event Dates
+      operationId: updateItem
+      tags: [Items]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemUpdateRequest'
+      responses:
+        '200':
+          description: Item updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemResponse'
+    delete:
+      summary: Soft Delete Item (Move to Trash)
+      operationId: deleteItem
+      tags: [Items]
+      responses:
+        '204':
+          description: Item moved to trash
+
+  /items/{id}/restore:
+    parameters:
+      - $ref: '#/components/parameters/ItemIdPathParam'
+    post:
+      summary: Restore Item from Trash (Admin/Owner)
+      operationId: restoreItem
+      tags: [Items]
+      responses:
+        '200':
+          description: Item restored to active status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemResponse'
+
+  # ==========================================================================
+  # 4. Assets & Binary Ingestion
+  # ==========================================================================
+  /assets/uploads:
+    post:
+      summary: Request Presigned URL(s) for Single or Multipart Asset Upload
+      description: |
+        Client calculates SHA-256 and submits file metadata.
+        If file < 100 MB, returns single PUT URL.
+        If file >= 100 MB (up to 4 GB), initializes S3 Multipart Upload and returns part URLs.
+        Checks for SHA-256 duplicates in workspace.
+      operationId: requestAssetUpload
+      tags: [Assets]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadRequest'
+      responses:
+        '201':
+          description: Upload session initialized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+        '409':
+          description: Duplicate SHA-256 checksum detected in workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DuplicateAssetError'
+
+  /assets/{id}/complete:
+    parameters:
+      - $ref: '#/components/parameters/ItemIdPathParam'
+    post:
+      summary: Confirm Upload Completion and Dispatch Background Worker
+      description: |
+        Called by Client after all bytes are uploaded to S3 storage.
+        Verifies part ETags, updates asset status to 'processing',
+        and queues BullMQ job for checksum verification, ClamAV scan, and derivative creation.
+      operationId: completeAssetUpload
+      tags: [Assets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteUploadRequest'
+      responses:
+        '202':
+          description: Upload confirmed; processing job queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+
+  /assets/{id}/download:
+    parameters:
+      - $ref: '#/components/parameters/ItemIdPathParam'
+      - name: disposition
+        in: query
+        schema:
+          type: string
+          enum: [inline, attachment]
+          default: inline
+    get:
+      summary: Get Short-Lived Signed Download URL (Expires in 15 Minutes)
+      operationId: getAssetDownloadUrl
+      tags: [Assets]
+      responses:
+        '200':
+          description: Presigned download URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  download_url:
+                    type: string
+                    format: uri
+                    example: https://pub-r2.momentra.app/permanent-assets/ws-org/doc.pdf?X-Amz-Signature=...
+                  expires_at:
+                    type: string
+                    format: date-time
+                    example: 2026-10-05T10:45:00Z
+
+  /assets/{id}/versions:
+    parameters:
+      - $ref: '#/components/parameters/ItemIdPathParam'
+    get:
+      summary: List File Version History for Asset
+      operationId: listAssetVersions
+      tags: [Assets]
+      responses:
+        '200':
+          description: Version history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AssetVersionResponse'
+
+  /assets/{id}/derivatives:
+    parameters:
+      - $ref: '#/components/parameters/ItemIdPathParam'
+    get:
+      summary: List Generated WebP Thumbnails, Previews, and Waveforms
+      operationId: listAssetDerivatives
+      tags: [Assets]
+      responses:
+        '200':
+          description: List of derivatives
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AssetDerivativeResponse'
+
+  # ==========================================================================
+  # 5. Links & External References
+  # ==========================================================================
+  /links:
+    post:
+      summary: Save Web Link & Trigger Asynchronous OpenGraph Scraper
+      operationId: createLink
+      tags: [Links]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkCreateRequest'
+      responses:
+        '201':
+          description: Link item created and scraping queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemResponse'
+
+  /links/{id}/recheck:
+    parameters:
+      - $ref: '#/components/parameters/ItemIdPathParam'
+    post:
+      summary: Trigger Manual Health Check and OpenGraph Refresh for Link
+      operationId: recheckLink
+      tags: [Links]
+      responses:
+        '200':
+          description: Link rechecked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkResponse'
+
+  # ==========================================================================
+  # 6. Timeline Engine
+  # ==========================================================================
+  /timeline:
+    get:
+      summary: Query Historical Timeline with Density Clustering & Bounding Box
+      description: |
+        Returns aggregated time buckets and clustered items for the viewport.
+        Uses GiST Index Range Overlapping (&&) for sub-second responses.
+      operationId: getTimeline
+      tags: [Timeline]
+      parameters:
+        - name: from
+          in: query
+          required: true
+          description: Viewport minimum date (ISO 8601 UTC)
+          schema:
+            type: string
+            format: date-time
+            example: 1932-01-01T00:00:00Z
+        - name: to
+          in: query
+          required: true
+          description: Viewport maximum date (ISO 8601 UTC)
+          schema:
+            type: string
+            format: date-time
+            example: 1950-12-31T23:59:59Z
+        - name: granularity
+          in: query
+          required: true
+          description: Zoom scale of timeline
+          schema:
+            type: string
+            enum: [decade, year, month, day]
+            default: year
+        - name: calendar
+          in: query
+          description: Preferred display calendar standard (BE = พ.ศ., CE = ค.ศ.)
+          schema:
+            type: string
+            enum: [be, ce]
+            default: be
+        - name: tag_ids
+          in: query
+          description: Filter items by tag UUIDs
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+      responses:
+        '200':
+          description: Timeline view data with clusters and milestones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimelineResponse'
+
+  # ==========================================================================
+  # 7. Search Engine (Faceted & Full-Text)
+  # ==========================================================================
+  /search:
+    get:
+      summary: Multi-criteria Bilingual Full-Text & Faceted Search
+      operationId: search
+      tags: [Search]
+      parameters:
+        - name: q
+          in: query
+          description: Search term (Thai or English)
+          schema:
+            type: string
+            example: รัฐธรรมนูญ
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [asset, link, note, event]
+        - name: tags
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+        - name: from_year
+          in: query
+          schema:
+            type: integer
+            example: 2475
+        - name: to_year
+          in: query
+          schema:
+            type: integer
+            example: 2490
+        - name: circa
+          in: query
+          description: Include circa events with expanded buffer
+          schema:
+            type: boolean
+            default: false
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [event_date_asc, event_date_desc, created_at_desc, relevance]
+            default: event_date_asc
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Faceted search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+
+  # ==========================================================================
+  # 8. Collections & Milestones
+  # ==========================================================================
+  /collections:
+    get:
+      summary: List Collections in Workspace
+      operationId: listCollections
+      tags: [Collections]
+      responses:
+        '200':
+          description: Array of collections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CollectionResponse'
+    post:
+      summary: Create New Collection
+      operationId: createCollection
+      tags: [Collections]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectionCreateRequest'
+      responses:
+        '201':
+          description: Collection created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectionResponse'
+
+  /collections/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get Collection Detail and Ordered Items
+      operationId: getCollection
+      tags: [Collections]
+      responses:
+        '200':
+          description: Collection with sorted items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectionDetailResponse'
+    delete:
+      summary: Delete Collection
+      operationId: deleteCollection
+      tags: [Collections]
+      responses:
+        '204':
+          description: Collection deleted
+
+  /collections/{id}/items:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      summary: Add Item to Collection with Specific Sort Order
+      operationId: addItemToCollection
+      tags: [Collections]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [item_id]
+              properties:
+                item_id:
+                  type: string
+                  format: uuid
+                sort_order:
+                  type: integer
+                  default: 0
+      responses:
+        '201':
+          description: Item added to collection
+
+  /milestones:
+    get:
+      summary: List Milestones on Timeline
+      operationId: listMilestones
+      tags: [Milestones]
+      responses:
+        '200':
+          description: List of milestones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MilestoneResponse'
+    post:
+      summary: Pin New Milestone (Admin/Owner)
+      operationId: createMilestone
+      tags: [Milestones]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MilestoneCreateRequest'
+      responses:
+        '201':
+          description: Milestone pinned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MilestoneResponse'
+
+  # ==========================================================================
+  # 9. Shares (Public & Protected Guest Links)
+  # ==========================================================================
+  /shares:
+    post:
+      summary: Create Passcode-Protected Share Link for Collection or Item
+      operationId: createShare
+      tags: [Shares]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShareCreateRequest'
+      responses:
+        '201':
+          description: Share link created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShareResponse'
+
+  /public/shares/{token}:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+          example: share_2475_revolution_demo_token
+    get:
+      summary: Inspect Public Share Link Metadata
+      description: Public endpoint (no auth cookie required). Indicates whether passcode is required.
+      operationId: inspectPublicShare
+      tags: [Shares]
+      security: []
+      responses:
+        '200':
+          description: Public share metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicShareMetadataResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '410':
+          description: Share link has expired
+
+  /public/shares/{token}/verify:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Verify Passcode and Receive Scoped Guest Token
+      description: Rate-limited to 5 attempts per 15 minutes per IP.
+      operationId: verifySharePasscode
+      tags: [Shares]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [passcode]
+              properties:
+                passcode:
+                  type: string
+                  example: Mmt@2026
+      responses:
+        '200':
+          description: Passcode valid; returns short-lived scoped guest JWT
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  guest_token:
+                    type: string
+                    example: eyJhbGciOi...
+                  expires_at:
+                    type: string
+                    format: date-time
+        '401':
+          description: Invalid passcode
+        '429':
+          $ref: '#/components/responses/TooManyRequestsError'
+
+  # ==========================================================================
+  # 10. Exports & Background Jobs
+  # ==========================================================
+  /exports:
+    post:
+      summary: Request Full Workspace or Collection Export (ZIP / CSV / JSON)
+      operationId: requestExport
+      tags: [Exports]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportRequest'
+      responses:
+        '202':
+          description: Export job initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+
+  /jobs/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Poll Asynchronous Job Status & Progress
+      operationId: getJobStatus
+      tags: [Exports]
+      responses:
+        '200':
+          description: Current job status and percentage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+
+  /jobs/{id}/download:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get Download URL for Finished Export File
+      operationId: getJobDownload
+      tags: [Exports]
+      responses:
+        '200':
+          description: Download link
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  download_url:
+                    type: string
+                    format: uri
+
+  # ==========================================================================
+  # 11. Audit Logs
+  # ==========================================================================
+  /audit-logs:
+    get:
+      summary: Query Immutable Workspace Audit Logs (Admin/Owner)
+      operationId: listAuditLogs
+      tags: [Audit Logs]
+      parameters:
+        - name: actor_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: entity_type
+          in: query
+          schema:
+            type: string
+            enum: [item, asset, link, workspace, collection]
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: List of audit records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditLogResponse'
+
+# ============================================================================
+# Components: Schemas, Headers, Responses, Parameters
+# ============================================================================
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: momentra_session
+      description: HTTP-only Secure session cookie
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer token for Guest Share access or API integrations
+    workspaceHeader:
+      type: apiKey
+      in: header
+      name: X-Workspace-ID
+      description: Target workspace UUID context for Multi-Tenancy
+
+  parameters:
+    WorkspaceIdPathParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ItemIdPathParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    IdempotencyKeyHeader:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: Unique UUIDv4 key preventing duplicate operations
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequestError:
+      description: Invalid request parameters or payload
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    UnauthorizedError:
+      description: Missing or expired authentication credentials
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ForbiddenError:
+      description: User lacks sufficient role permission in this workspace
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    NotFoundError:
+      description: Resource not found in this workspace
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    TooManyRequestsError:
+      description: Rate limit exceeded
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+  schemas:
+    # RFC 9457 / RFC 7807 Standard Error Object
+    ProblemDetails:
+      type: object
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri
+          example: https://momentra.app/errors/validation-failed
+        title:
+          type: string
+          example: Validation Failed
+        status:
+          type: integer
+          example: 400
+        detail:
+          type: string
+          example: The event_end date cannot precede event_start.
+        instance:
+          type: string
+          example: /api/v1/items
+        correlation_id:
+          type: string
+          format: uuid
+          example: d3b07384-d113-494a-939e-4e4b7c62d08a
+        invalid_params:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              reason:
+                type: string
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: somchai@momentra.app
+        password:
+          type: string
+          format: password
+          example: Momentra@2026
+
+    AuthResponse:
+      type: object
+      required: [user, active_workspace_id]
+      properties:
+        user:
+          $ref: '#/components/schemas/UserProfileResponse'
+        active_workspace_id:
+          type: string
+          format: uuid
+
+    UserProfileResponse:
+      type: object
+      required: [id, email, full_name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+          example: สมชาย วิจิตรานันท์
+        avatar_url:
+          type: string
+          nullable: true
+
+    WorkspaceResponse:
+      type: object
+      required: [id, slug, name, type, role]
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+          example: national-archives
+        name:
+          type: string
+          example: หอจดหมายเหตุประวัติศาสตร์และวัฒนธรรมไทย
+        type:
+          type: string
+          enum: [personal, organization]
+        role:
+          type: string
+          enum: [owner, admin, contributor, viewer]
+        settings:
+          type: object
+
+    WorkspaceCreateRequest:
+      type: object
+      required: [name, type]
+      properties:
+        name:
+          type: string
+          example: คลังประวัติศาสตร์ตระกูลวิจิตรานันท์
+        type:
+          type: string
+          enum: [personal, organization]
+          default: personal
+
+    WorkspaceUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        settings:
+          type: object
+
+    WorkspaceMemberResponse:
+      type: object
+      required: [user_id, email, full_name, role, joined_at]
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        full_name:
+          type: string
+        role:
+          type: string
+          enum: [owner, admin, contributor, viewer]
+        joined_at:
+          type: string
+          format: date-time
+
+    MemberInviteRequest:
+      type: object
+      required: [email, role]
+      properties:
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, contributor, viewer]
+
+    # Item Schemas
+    ItemResponse:
+      type: object
+      required: [id, workspace_id, type, title, event_start, event_end, date_precision, is_circa]
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [asset, link, note, event]
+        title:
+          type: string
+          example: การเปลี่ยนแปลงการปกครอง 24 มิถุนายน 2475
+        description:
+          type: string
+          nullable: true
+        event_start:
+          type: string
+          format: date-time
+          example: 1932-06-24T05:00:00Z
+        event_end:
+          type: string
+          format: date-time
+          example: 1932-06-24T18:00:00Z
+        date_precision:
+          type: string
+          enum: [year, month, day, datetime]
+          example: datetime
+        is_circa:
+          type: boolean
+          example: false
+        sort_key:
+          type: integer
+          format: int64
+        display_date_be:
+          type: string
+          example: 24 มิถุนายน 2475 เวลา 05:00 น.
+        display_date_ce:
+          type: string
+          example: 24 June 1932 05:00 UTC
+        dublin_core:
+          type: object
+        asset:
+          $ref: '#/components/schemas/AssetResponse'
+        link:
+          $ref: '#/components/schemas/LinkResponse'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/TagResponse'
+
+    ItemCreateRequest:
+      type: object
+      required: [type, title, event_start, event_end, date_precision]
+      properties:
+        type:
+          type: string
+          enum: [asset, link, note, event]
+        title:
+          type: string
+          example: บันทึกวันเปิดทำการธนาคารแห่งประเทศไทย
+        description:
+          type: string
+        event_start:
+          type: string
+          format: date-time
+          example: 1942-12-10T00:00:00Z
+        event_end:
+          type: string
+          format: date-time
+          example: 1942-12-10T23:59:59Z
+        date_precision:
+          type: string
+          enum: [year, month, day, datetime]
+          default: day
+        is_circa:
+          type: boolean
+          default: false
+        dublin_core:
+          type: object
+
+    ItemUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        event_start:
+          type: string
+          format: date-time
+        event_end:
+          type: string
+          format: date-time
+        date_precision:
+          type: string
+          enum: [year, month, day, datetime]
+        is_circa:
+          type: boolean
+
+    BulkUpdateRequest:
+      type: object
+      required: [item_ids]
+      properties:
+        item_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        add_tag_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        remove_tag_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        add_collection_id:
+          type: string
+          format: uuid
+
+    TrashedItemResponse:
+      type: object
+      required: [id, title, deleted_at, purge_due_date]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        deleted_at:
+          type: string
+          format: date-time
+        purge_due_date:
+          type: string
+          format: date-time
+          example: 2026-11-04T09:00:00Z
+        days_remaining:
+          type: integer
+          example: 29
+
+    PaginatedItemsResponse:
+      type: object
+      required: [items, next_cursor, has_more]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemResponse'
+        next_cursor:
+          type: string
+          nullable: true
+        has_more:
+          type: boolean
+
+    # Asset Uploads
+    UploadRequest:
+      type: object
+      required: [filename, mime_type, size_bytes, checksum_sha256]
+      properties:
+        filename:
+          type: string
+          example: 2479_plaque_monument.png
+        mime_type:
+          type: string
+          example: image/png
+        size_bytes:
+          type: integer
+          format: int64
+          example: 14502800
+        checksum_sha256:
+          type: string
+          example: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+    UploadResponse:
+      type: object
+      required: [item_id, upload_mode, storage_key]
+      properties:
+        item_id:
+          type: string
+          format: uuid
+        upload_mode:
+          type: string
+          enum: [single_put, multipart]
+          example: single_put
+        storage_key:
+          type: string
+          example: temp-uploads/2479_plaque_monument.png
+        single_upload_url:
+          type: string
+          format: uri
+          nullable: true
+        multipart:
+          type: object
+          nullable: true
+          properties:
+            upload_id:
+              type: string
+            part_size_bytes:
+              type: integer
+            parts:
+              type: array
+              items:
+                type: object
+                properties:
+                  part_number:
+                    type: integer
+                  upload_url:
+                    type: string
+
+    CompleteUploadRequest:
+      type: object
+      properties:
+        upload_id:
+          type: string
+          nullable: true
+        parts:
+          type: array
+          items:
+            type: object
+            required: [part_number, etag]
+            properties:
+              part_number:
+                type: integer
+              etag:
+                type: string
+
+    DuplicateAssetError:
+      type: object
+      required: [type, title, status, existing_item_id]
+      properties:
+        type:
+          type: string
+          example: https://momentra.app/errors/duplicate-asset
+        title:
+          type: string
+          example: Duplicate Asset Detected
+        status:
+          type: integer
+          example: 409
+        existing_item_id:
+          type: string
+          format: uuid
+        detail:
+          type: string
+          example: An asset with identical SHA-256 hash already exists in this workspace.
+
+    AssetResponse:
+      type: object
+      required: [storage_key, mime_type, size_bytes, checksum_sha256, status]
+      properties:
+        storage_key:
+          type: string
+        original_filename:
+          type: string
+        mime_type:
+          type: string
+        size_bytes:
+          type: integer
+        checksum_sha256:
+          type: string
+        status:
+          type: string
+          enum: [uploading, processing, ready, failed, quarantined]
+
+    AssetDerivativeResponse:
+      type: object
+      required: [derivative_type, storage_key, mime_type]
+      properties:
+        derivative_type:
+          type: string
+          enum: [thumbnail_sm, thumbnail_md, thumbnail_lg, preview_hls, waveform]
+        storage_key:
+          type: string
+        mime_type:
+          type: string
+        width:
+          type: integer
+          nullable: true
+        height:
+          type: integer
+          nullable: true
+
+    AssetVersionResponse:
+      type: object
+      required: [version_number, storage_key, checksum_sha256, created_at]
+      properties:
+        version_number:
+          type: integer
+        storage_key:
+          type: string
+        checksum_sha256:
+          type: string
+        size_bytes:
+          type: integer
+        change_summary:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    # Links
+    LinkCreateRequest:
+      type: object
+      required: [url, title, event_start, event_end, date_precision]
+      properties:
+        url:
+          type: string
+          format: uri
+          example: https://digital.nlt.go.th/archive/srikrung
+        title:
+          type: string
+          example: หนังสือพิมพ์ศรีกรุง พ.ศ. 2475
+        event_start:
+          type: string
+          format: date-time
+        event_end:
+          type: string
+          format: date-time
+        date_precision:
+          type: string
+          enum: [year, month, day, datetime]
+
+    LinkResponse:
+      type: object
+      required: [url, domain, is_broken]
+      properties:
+        url:
+          type: string
+        domain:
+          type: string
+        og_title:
+          type: string
+          nullable: true
+        og_description:
+          type: string
+          nullable: true
+        og_image:
+          type: string
+          nullable: true
+        is_broken:
+          type: boolean
+
+    # Timeline Response
+    TimelineResponse:
+      type: object
+      required: [granularity, calendar, buckets, milestones]
+      properties:
+        granularity:
+          type: string
+          enum: [decade, year, month, day]
+        calendar:
+          type: string
+          enum: [be, ce]
+        buckets:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimelineBucket'
+        milestones:
+          type: array
+          items:
+            $ref: '#/components/schemas/MilestoneResponse'
+
+    TimelineBucket:
+      type: object
+      required: [bucket_key, display_label, count, items]
+      properties:
+        bucket_key:
+          type: string
+          example: "1932"
+        display_label:
+          type: string
+          example: พ.ศ. 2475 (1932)
+        count:
+          type: integer
+          example: 4
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemResponse'
+
+    MilestoneResponse:
+      type: object
+      required: [id, title, target_date_start, target_date_end, color]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          example: การอภิวัฒน์สยาม 2475
+        target_date_start:
+          type: string
+          format: date-time
+        target_date_end:
+          type: string
+          format: date-time
+        color:
+          type: string
+          example: '#DC2626'
+
+    MilestoneCreateRequest:
+      type: object
+      required: [title, target_date_start, target_date_end]
+      properties:
+        title:
+          type: string
+        target_date_start:
+          type: string
+          format: date-time
+        target_date_end:
+          type: string
+          format: date-time
+        color:
+          type: string
+          default: '#E11D48'
+
+    # Search
+    SearchResponse:
+      type: object
+      required: [results, total_hits, facets]
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemResponse'
+        total_hits:
+          type: integer
+          example: 142
+        facets:
+          type: object
+          properties:
+            types:
+              type: array
+              items:
+                type: object
+                properties:
+                  key:
+                    type: string
+                  count:
+                    type: integer
+            tags:
+              type: array
+              items:
+                type: object
+                properties:
+                  key:
+                    type: string
+                  count:
+                    type: integer
+
+    # Tags & Collections
+    TagResponse:
+      type: object
+      required: [id, name, color]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: การเมืองและประชาธิปไตย
+        color:
+          type: string
+          example: '#EF4444'
+
+    CollectionResponse:
+      type: object
+      required: [id, title]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          example: จดหมายเหตุการอภิวัฒน์สยาม พ.ศ. 2475
+        description:
+          type: string
+          nullable: true
+        item_count:
+          type: integer
+          example: 3
+
+    CollectionCreateRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+
+    CollectionDetailResponse:
+      type: object
+      required: [id, title, items]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemResponse'
+
+    # Shares
+    ShareCreateRequest:
+      type: object
+      properties:
+        collection_id:
+          type: string
+          format: uuid
+        item_id:
+          type: string
+          format: uuid
+        passcode:
+          type: string
+          example: Mmt@2026
+        permission:
+          type: string
+          enum: [view, download]
+          default: view
+        expires_in_days:
+          type: integer
+          default: 30
+          maximum: 90
+
+    ShareResponse:
+      type: object
+      required: [share_token, share_url, expires_at]
+      properties:
+        share_token:
+          type: string
+          example: share_2475_revolution_demo_token
+        share_url:
+          type: string
+          format: uri
+          example: https://momentra.app/share/share_2475_revolution_demo_token
+        expires_at:
+          type: string
+          format: date-time
+
+    PublicShareMetadataResponse:
+      type: object
+      required: [title, requires_passcode, is_collection]
+      properties:
+        title:
+          type: string
+          example: จดหมายเหตุการอภิวัฒน์สยาม พ.ศ. 2475
+        description:
+          type: string
+          nullable: true
+        requires_passcode:
+          type: boolean
+          example: true
+        is_collection:
+          type: boolean
+          example: true
+
+    # Exports & Jobs
+    ExportRequest:
+      type: object
+      required: [format]
+      properties:
+        format:
+          type: string
+          enum: [json, csv, full_zip]
+          example: full_zip
+        collection_id:
+          type: string
+          format: uuid
+
+    JobResponse:
+      type: object
+      required: [job_id, status, progress_percent]
+      properties:
+        job_id:
+          type: string
+          format: uuid
+          example: c9f12345-6789-4abc-def0-123456789abc
+        status:
+          type: string
+          enum: [queued, processing, completed, failed]
+          example: processing
+        progress_percent:
+          type: integer
+          example: 65
+
+    AuditLogResponse:
+      type: object
+      required: [id, action, entity_type, entity_id, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        actor_name:
+          type: string
+          nullable: true
+          example: ปิติ พงษ์สยาม
+        action:
+          type: string
+          example: ASSET_UPLOADED
+        entity_type:
+          type: string
+          example: asset
+        entity_id:
+          type: string
+          format: uuid
+        new_values:
+          type: object
+        old_values:
+          type: object
+          nullable: true
+        created_at:
+          type: string
+          format: date-time

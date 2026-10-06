@@ -5,20 +5,21 @@
 FROM node:22-alpine AS base
 WORKDIR /app
 RUN apk add --no-cache libc6-compat dumb-init
-ENV NODE_ENV=production
 
 # --- Stage 1: Dependencies ---
 FROM base AS dependencies
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --include=dev
 
 # --- Stage 2: Builder ---
 FROM base AS builder
 WORKDIR /app
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
+RUN mkdir -p public
 RUN npm run build
+RUN npm prune --omit=dev
 
 # --- Stage 3: Runner ---
 FROM node:22-alpine AS runner

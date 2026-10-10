@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Clock, Search, CalendarPlus, LayoutGrid, BookOpen } from 'lucide-react';
+import { Clock, Search, CalendarPlus, LayoutGrid, BookOpen, UserCircle } from 'lucide-react';
 
 export function NavigationBar() {
   const pathname = usePathname();
@@ -13,6 +13,7 @@ export function NavigationBar() {
     { href: '/timeline', label: 'ผังเวลาไทม์ไลน์ (Timeline)', icon: Clock },
     { href: '/search', label: 'ค้นหาจดหมายเหตุ (Search)', icon: Search },
     { href: '/date-picker', label: 'เครื่องมือเลือกวันเวลา (Date Picker)', icon: CalendarPlus },
+    { href: '/hub/profile', label: 'จัดการ Personal Hub', icon: UserCircle },
     { href: '/faq', label: 'คู่มือ & FAQ (User Guide)', icon: BookOpen },
   ];
 

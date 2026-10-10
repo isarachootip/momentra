@@ -24,6 +24,7 @@ const envSchema = z.object({
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
     .default('info'),
   CORS_ORIGIN: z.string().default('*'),
+  SERP_API_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

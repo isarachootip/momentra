@@ -8,6 +8,8 @@ import { foundationRoutes } from './modules/foundation/foundation.routes.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { searchRoutes } from './modules/search/search.routes.js';
 import { timelineRoutes } from './modules/timeline/timeline.routes.js';
+import { personalRoutes } from './modules/personal/personal.routes.js';
+import { billingRoutes } from './modules/billing/billing.routes.js';
 import { closeDatabasePool } from './db/pool.js';
 
 export function buildApp(): FastifyInstance {
@@ -36,6 +38,8 @@ export function buildApp(): FastifyInstance {
   app.register(authRoutes);
   app.register(searchRoutes);
   app.register(timelineRoutes);
+  app.register(personalRoutes);
+  app.register(billingRoutes);
 
   // 6. Graceful Shutdown Hook
   app.addHook('onClose', async () => {

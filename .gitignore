@@ -7,6 +7,7 @@ dist/
 web/.next/
 web/out/
 coverage/
+*.tsbuildinfo
 
 # Environment variables & secrets
 .env

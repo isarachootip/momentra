@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import type { PublicProfileInfo, SocialLink, KmItem } from '@/types/personal-hub';
 import { HubHeader } from '@/components/personal-hub/hub-header';
 import { HubLinks } from '@/components/personal-hub/hub-links';
 import { HubKmTimeline } from '@/components/personal-hub/hub-km-timeline';
-import { Loader2, UserX } from 'lucide-react';
+import { Loader2, LogIn } from 'lucide-react';
 
 const INITIAL_PROFILE: PublicProfileInfo = {
   username: 'samran',
@@ -108,6 +109,32 @@ export default function PublicHubPage() {
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto pb-16">
+      {/* Top Public Navigation Bar */}
+      <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <Link href="/" className="flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-white transition-colors">
+          <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-rose-900 text-[10px] text-white font-black">
+            M
+          </span>
+          <span>Momentra Public Showcase</span>
+        </Link>
+        {isOwner ? (
+          <Link
+            href="/hub"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 px-3.5 py-1.5 text-xs font-semibold text-rose-300 transition-colors border border-slate-700"
+          >
+            <span>จัดการ Hub Studio</span>
+          </Link>
+        ) : (
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-rose-900 hover:bg-rose-800 px-3.5 py-1.5 text-xs font-bold text-white transition-colors shadow-xs"
+          >
+            <LogIn className="h-3.5 w-3.5" />
+            <span>เข้าสู่ระบบ (Sign In)</span>
+          </Link>
+        )}
+      </div>
+
       {/* 1. Header with Visitor Preview Toggle */}
       <HubHeader
         profile={{ ...profile, username }}

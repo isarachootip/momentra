@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { WorkspaceHeader } from '@/components/layout/workspace-header';
-import { NavigationBar } from '@/components/layout/navigation-bar';
+import { AppShell } from '@/components/layout/app-shell';
 
 export const metadata: Metadata = {
   title: 'Momentra — Historical Digital Asset Management (HDAM)',
@@ -16,11 +15,7 @@ export default function RootLayout({
   return (
     <html lang="th">
       <body className="min-h-screen bg-slate-50 antialiased text-slate-900">
-        <WorkspaceHeader />
-        <NavigationBar />
-        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          {children}
-        </main>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

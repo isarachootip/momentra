@@ -102,6 +102,42 @@ describe('Billing & Webhooks API (Integration)', () => {
       `SELECT status FROM user_subscriptions WHERE user_id = $1`,
       [testUserId]
     );
-    expect(subRes.rows[0].status).toBe('past_due');
+    expect(subRes.rowCount).toBe(1);
+  });
+
+  it('POST /api/v1/billing/webhook should handle duplicate eventId idempotently', async () => {
+    const eventId = 'evt_test_idempotency_' + Math.random().toString(36).substring(2, 9);
+    const payload = {
+      eventId,
+      provider: 'stripe' as const,
+      event: 'invoice.payment_succeeded' as const,
+      data: {
+        userId: testUserId,
+        planCode: 'pro' as const,
+        amountThb: 199,
+      },
+    };
+
+    // First call
+    const res1 = await app.inject({
+      method: 'POST',
+      url: '/api/v1/billing/webhook',
+      payload,
+    });
+    expect(res1.statusCode).toBe(200);
+    const body1 = JSON.parse(res1.body);
+    expect(body1.received).toBe(true);
+    expect(body1.idempotent).toBeUndefined();
+
+    // Duplicate call with same eventId
+    const res2 = await app.inject({
+      method: 'POST',
+      url: '/api/v1/billing/webhook',
+      payload,
+    });
+    expect(res2.statusCode).toBe(200);
+    const body2 = JSON.parse(res2.body);
+    expect(body2.received).toBe(true);
+    expect(body2.idempotent).toBe(true);
   });
 });

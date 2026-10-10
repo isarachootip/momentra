@@ -64,9 +64,10 @@ export class PersonalPageService {
     const cleanUsername = rawUsername.replace(/^@/, '').toLowerCase().trim();
 
     const userRes = await pool.query(
-      `SELECT id, full_name, avatar_url, username, page_template, page_theme, page_bio, social_links
+      `SELECT id, full_name, avatar_url, username, custom_domain, page_template, page_theme, page_bio, social_links
        FROM users
-       WHERE LOWER(username) = LOWER($1) AND is_page_published = TRUE AND deleted_at IS NULL
+       WHERE (LOWER(username) = LOWER($1) OR LOWER(custom_domain) = LOWER($1))
+         AND is_page_published = TRUE AND deleted_at IS NULL
        LIMIT 1`,
       [cleanUsername]
     );

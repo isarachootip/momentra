@@ -10,6 +10,8 @@ export const createCheckoutSchema = z.object({
 export type CreateCheckoutInput = z.infer<typeof createCheckoutSchema>;
 
 export const billingWebhookSchema = z.object({
+  eventId: z.string().optional(),
+  provider: z.enum(['stripe', 'omise', 'system']).optional().default('stripe'),
   event: z.enum([
     'checkout.session.completed',
     'invoice.payment_succeeded',

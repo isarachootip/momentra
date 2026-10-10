@@ -63,6 +63,7 @@ export class BillingService {
     // If free plan, immediately activate
     if (plan.price_thb_monthly === 0) {
       await this.processWebhook({
+        provider: 'system',
         event: 'checkout.session.completed',
         data: { userId, planCode: 'free', status: 'active' },
       });
@@ -80,9 +81,17 @@ export class BillingService {
     };
   }
 
-  public async processWebhook(input: BillingWebhookInput): Promise<{ received: boolean }> {
-    const { event, data } = input;
+  public async processWebhook(input: BillingWebhookInput): Promise<{ received: boolean; idempotent?: boolean }> {
+    const { event, data, eventId, provider = 'stripe' } = input;
     if (!data.userId) return { received: true };
+
+    // 1. Idempotency Check
+    if (eventId) {
+      const existing = await pool.query(`SELECT 1 FROM processed_webhook_events WHERE event_id = $1`, [eventId]);
+      if ((existing.rowCount ?? 0) > 0) {
+        return { received: true, idempotent: true };
+      }
+    }
 
     if (event === 'checkout.session.completed' || event === 'invoice.payment_succeeded') {
       const planCode = data.planCode ?? 'pro';
@@ -91,14 +100,14 @@ export class BillingService {
       const subRes = await pool.query(
         `INSERT INTO user_subscriptions (
            user_id, plan_code, status, payment_provider, current_period_start, current_period_end, updated_at
-         ) VALUES ($1, $2, 'active', 'stripe', NOW(), $3, NOW())
+         ) VALUES ($1, $2, 'active', $3, NOW(), $4, NOW())
          ON CONFLICT (user_id) DO UPDATE SET
            plan_code = EXCLUDED.plan_code,
            status = 'active',
            current_period_end = EXCLUDED.current_period_end,
            updated_at = NOW()
          RETURNING id`,
-        [data.userId, planCode, periodEnd]
+        [data.userId, planCode, provider, periodEnd]
       );
 
       if (data.amountThb && data.amountThb > 0) {
@@ -109,9 +118,30 @@ export class BillingService {
         );
       }
     } else if (event === 'invoice.payment_failed') {
-      await pool.query(`UPDATE user_subscriptions SET status = 'past_due', updated_at = NOW() WHERE user_id = $1`, [data.userId]);
+      // PromptPay 3-Day Grace Period Logic
+      const subCheck = await pool.query(`SELECT current_period_end FROM user_subscriptions WHERE user_id = $1`, [data.userId]);
+      const currentPeriodEnd = subCheck.rows[0]?.current_period_end ? new Date(subCheck.rows[0].current_period_end) : new Date();
+      const gracePeriodEnd = new Date(currentPeriodEnd.getTime() + 3 * 24 * 60 * 60 * 1000); // 3 days grace
+
+      const isPastGrace = Date.now() > gracePeriodEnd.getTime();
+      const newStatus = isPastGrace ? 'past_due' : 'active';
+
+      await pool.query(
+        `UPDATE user_subscriptions SET status = $1, updated_at = NOW() WHERE user_id = $2`,
+        [newStatus, data.userId]
+      );
     } else if (event === 'customer.subscription.deleted') {
       await pool.query(`UPDATE user_subscriptions SET status = 'canceled', updated_at = NOW() WHERE user_id = $1`, [data.userId]);
+    }
+
+    // 2. Mark event as processed
+    if (eventId) {
+      await pool.query(
+        `INSERT INTO processed_webhook_events (event_id, event_type, payment_provider, payload)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (event_id) DO NOTHING`,
+        [eventId, event, provider, JSON.stringify(data)]
+      );
     }
 
     return { received: true };

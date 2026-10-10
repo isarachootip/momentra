@@ -4,15 +4,25 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { User, Link2, BookOpen, CreditCard, ExternalLink, Sparkles, Users } from 'lucide-react';
+import { getCurrentUser, subscribeToUser } from '@/lib/user-store';
 
 export default function HubLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [username, setUsername] = useState<string>('drmum');
+  const [username, setUsername] = useState<string>(getCurrentUser().username || 'samran');
 
   useEffect(() => {
-    // Read cached username or profile
     const saved = localStorage.getItem('momentra_hub_username');
-    if (saved) setUsername(saved);
+    if (saved) {
+      setUsername(saved);
+    } else {
+      setUsername(getCurrentUser().username || 'samran');
+    }
+
+    return subscribeToUser((user) => {
+      if (user.username) {
+        setUsername(user.username);
+      }
+    });
   }, []);
 
   const tabs = [

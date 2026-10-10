@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Landmark, Building2, User, ChevronDown } from 'lucide-react';
+import { getCurrentUser, subscribeToUser, type CurrentUser } from '@/lib/user-store';
 
 interface WorkspaceHeaderProps {
   currentWorkspace?: string;
@@ -10,6 +11,18 @@ interface WorkspaceHeaderProps {
 export function WorkspaceHeader({
   currentWorkspace = 'หอจดหมายเหตุประวัติศาสตร์และวัฒนธรรมไทย',
 }: WorkspaceHeaderProps) {
+  const [currentUser, setCurrentUser] = useState<CurrentUser>(getCurrentUser());
+
+  useEffect(() => {
+    setCurrentUser(getCurrentUser());
+    const unsubscribe = subscribeToUser((updated) => {
+      setCurrentUser(updated);
+    });
+    return unsubscribe;
+  }, []);
+
+  const initial = currentUser.fullName ? currentUser.fullName.charAt(0) : 'ส';
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -39,12 +52,20 @@ export function WorkspaceHeader({
 
           {/* User Profile */}
           <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-slate-700 font-semibold text-xs">
-              <User className="h-4 w-4" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-100 text-rose-900 font-bold text-xs border border-rose-200">
+              {currentUser.avatarUrl ? (
+                <img
+                  src={currentUser.avatarUrl}
+                  alt={currentUser.fullName}
+                  className="h-full w-full rounded-full object-cover"
+                />
+              ) : (
+                initial
+              )}
             </div>
             <div className="hidden md:block text-left text-xs">
-              <div className="font-semibold text-slate-800">สมชาย วิจิตรานันท์</div>
-              <div className="text-[11px] text-slate-500">somchai@momentra.app</div>
+              <div className="font-semibold text-slate-800">{currentUser.fullName}</div>
+              <div className="text-[11px] text-slate-500">{currentUser.email}</div>
             </div>
           </div>
         </div>

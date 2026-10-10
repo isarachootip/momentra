@@ -9,25 +9,25 @@ import { HubKmTimeline } from '@/components/personal-hub/hub-km-timeline';
 import { Loader2, UserX } from 'lucide-react';
 
 const INITIAL_PROFILE: PublicProfileInfo = {
-  username: 'drmum',
-  fullName: 'ดร. มานพ พิทักษ์ธรรม (Dr. Mum)',
+  username: 'samran',
+  fullName: 'สำราญ ศักดี',
   avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-  pageBio: 'แพทย์ผู้เชี่ยวชาญด้านเวชศาสตร์ฟื้นฟู และนักค้นคว้าประวัติศาสตร์การแพทย์แผนไทยโบราณ ผสานวิทยาการสมัยใหม่เข้ากับภูมิปัญญาบรรพบุรุษ',
+  pageBio: 'เจ้าของคลังประวัติศาสตร์และจดหมายเหตุดิจิทัลส่วนบุคคลและครอบครัว',
   pageTemplate: 'timeline',
   pageTheme: { theme: 'dark', accent: '#3b82f6' },
   planCode: 'pro',
   officialLinks: [
-    { id: '1', platform: 'youtube', label: 'Dr. Mum Health Channel (Official)', url: 'https://youtube.com/@drmum', link_group: 'official', visibility: 'public', sort_order: 1 },
-    { id: '2', platform: 'website', label: 'สถาบันวิจัยการแพทย์ประวัติศาสตร์', url: 'https://drmum-research.org', link_group: 'official', visibility: 'public', sort_order: 2 },
-    { id: '3', platform: 'line', label: 'LINE Official Account', url: 'https://page.line.me/drmum', link_group: 'official', visibility: 'public', sort_order: 3 },
+    { id: '1', platform: 'youtube', label: 'Samran Channel (Official)', url: 'https://youtube.com/@samran', link_group: 'official', visibility: 'public', sort_order: 1 },
+    { id: '2', platform: 'website', label: 'คลังประวัติศาสตร์และจดหมายเหตุดิจิทัล', url: 'https://samran-archive.org', link_group: 'official', visibility: 'public', sort_order: 2 },
+    { id: '3', platform: 'line', label: 'LINE Official Account', url: 'https://page.line.me/samran', link_group: 'official', visibility: 'public', sort_order: 3 },
   ],
   personalLinks: [
-    { id: '4', platform: 'facebook', label: 'บันทึกหมอหม่ำส่วนตัว', url: 'https://facebook.com/drmum.personal', link_group: 'personal', visibility: 'public', sort_order: 4 },
+    { id: '4', platform: 'facebook', label: 'บันทึกส่วนตัว คุณสำราญ', url: 'https://facebook.com/samran.personal', link_group: 'personal', visibility: 'public', sort_order: 4 },
   ],
 };
 
 const INITIAL_KM_ITEMS: KmItem[] = [
-  { id: '1', title: 'ประวัติการค้นพบตำราแพทย์โอสถพระนารายณ์', km_category: 'article', event_start: '1985-04-12T00:00:00Z', event_end: '1985-04-12T23:59:59Z', date_precision: 'day', is_circa: false, description: 'งานวิจัยเชิงลึกเกี่ยวกับสูตรยาไทยโบราณในสมัยกรุงศรีอยุธยา', visibility: 'public', is_public: true, link_url: 'https://drmum-research.org/narai-medicine', tags: ['ประวัติศาสตร์การแพทย์', 'อยุธยา'] },
+  { id: '1', title: 'ประวัติการค้นพบตำราแพทย์โอสถพระนารายณ์', km_category: 'article', event_start: '1985-04-12T00:00:00Z', event_end: '1985-04-12T23:59:59Z', date_precision: 'day', is_circa: false, description: 'งานวิจัยเชิงลึกเกี่ยวกับสูตรยาไทยโบราณในสมัยกรุงศรีอยุธยา', visibility: 'public', is_public: true, link_url: 'https://samran-archive.org/narai-medicine', tags: ['ประวัติศาสตร์การแพทย์', 'อยุธยา'] },
   { id: '2', title: 'คลิปบรรยายพิเศษ: สมุนไพรไทยกับการบำบัดโรคยุคใหม่', km_category: 'video', event_start: '2021-08-20T00:00:00Z', event_end: '2021-08-20T23:59:59Z', date_precision: 'day', is_circa: false, description: 'การบรรยายวิชาการ ณ โรงพยาบาลศิริราช', visibility: 'public', is_public: true, link_url: 'https://youtube.com/watch?v=sample123', tags: ['สมุนไพร', 'บรรยาย'] },
   { id: '3', title: 'ภาพถ่ายใบลานบันทึกสูตรยาโบราณ วัดพระเชตุพน', km_category: 'image', event_start: '1932-06-24T00:00:00Z', event_end: '1932-06-24T23:59:59Z', date_precision: 'day', is_circa: true, description: 'ภาพถ่ายความละเอียดสูงจากหอสมุดแห่งชาติ', visibility: 'public', is_public: true, tags: ['ใบลาน', 'ภาพถ่ายโบราณ'] },
   { id: '4', title: 'บันทึกส่วนตัว: ความคิดเห็นเบื้องต้นต่อสูตรยาเทียบเคียง', km_category: 'note', event_start: '2024-01-10T00:00:00Z', event_end: '2024-01-10T23:59:59Z', date_precision: 'day', is_circa: false, description: 'บันทึกภายในสำหรับทีมวิจัย (Private)', visibility: 'private', is_public: false, tags: ['วิจัยภายใน'] },
@@ -35,7 +35,7 @@ const INITIAL_KM_ITEMS: KmItem[] = [
 
 export default function PublicHubPage() {
   const params = useParams();
-  const username = typeof params?.username === 'string' ? params.username : 'drmum';
+  const username = typeof params?.username === 'string' ? params.username : 'samran';
 
   const [profile, setProfile] = useState<PublicProfileInfo>(INITIAL_PROFILE);
   const [kmItems, setKmItems] = useState<KmItem[]>(INITIAL_KM_ITEMS);
@@ -45,7 +45,7 @@ export default function PublicHubPage() {
 
   useEffect(() => {
     // Check if the current client is the logged-in owner of this profile
-    const savedUser = localStorage.getItem('momentra_hub_username') || 'drmum';
+    const savedUser = localStorage.getItem('momentra_hub_username') || 'samran';
     const isClientOwner = savedUser.toLowerCase() === username.toLowerCase();
     setIsOwner(isClientOwner);
 

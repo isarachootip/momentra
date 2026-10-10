@@ -3,7 +3,7 @@
 import React from 'react';
 import type { WorkspaceMember, WorkspaceRole } from '@/types';
 import { RoleBadge } from './role-badge';
-import { Trash2, ShieldCheck, MoreVertical } from 'lucide-react';
+import { Trash2, UserCog, Pencil } from 'lucide-react';
 
 interface MemberTableProps {
   members: WorkspaceMember[];
@@ -11,6 +11,7 @@ interface MemberTableProps {
   currentUserRole?: WorkspaceRole;
   onRoleChange: (userId: string, newRole: WorkspaceRole) => Promise<void>;
   onRemoveMember: (userId: string) => Promise<void>;
+  onEditMember?: (member: WorkspaceMember) => void;
 }
 
 export function MemberTable({
@@ -19,6 +20,7 @@ export function MemberTable({
   currentUserRole,
   onRoleChange,
   onRemoveMember,
+  onEditMember,
 }: MemberTableProps) {
   const canManage = currentUserRole === 'owner' || currentUserRole === 'admin';
 
@@ -93,6 +95,19 @@ export function MemberTable({
                   {canManage && (
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {/* Edit & Password Button */}
+                        {canEditThisMember && (
+                          <button
+                            type="button"
+                            onClick={() => onEditMember?.(member)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-rose-900 hover:bg-rose-50 hover:border-rose-300 transition-colors shadow-2xs"
+                            title={isOwner ? 'จัดการบัญชีและรหัสผ่านเจ้าของ' : 'แก้ไขข้อมูลและรหัสผ่าน'}
+                          >
+                            <UserCog className="h-3.5 w-3.5 text-rose-800" />
+                            <span>{isOwner ? 'แก้ไข / รหัสผ่าน' : 'แก้ไข'}</span>
+                          </button>
+                        )}
+
                         {canEditThisMember && !isOwner ? (
                           <select
                             value={member.role}

@@ -27,6 +27,15 @@ export class ValidationError extends AppError {
   }
 }
 
+export class BadRequestError extends AppError {
+  public readonly statusCode = 400;
+  public readonly errorCode = 'BAD_REQUEST';
+
+  constructor(message = 'Bad request') {
+    super(message);
+  }
+}
+
 export class UnauthorizedError extends AppError {
   public readonly statusCode = 401;
   public readonly errorCode = 'UNAUTHORIZED';

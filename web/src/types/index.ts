@@ -53,3 +53,22 @@ export interface SearchResultItem extends TimelineItem {
   headline_description?: string;
   relevance_score?: number;
 }
+
+export type WorkspaceRole = 'owner' | 'admin' | 'contributor' | 'viewer';
+
+export interface WorkspaceMember {
+  user_id: string;
+  email: string;
+  full_name: string;
+  avatar_url: string | null;
+  role: WorkspaceRole;
+  joined_at: string;
+}
+
+export interface WorkspaceSummary {
+  id: string;
+  slug: string;
+  name: string;
+  type: 'personal' | 'organization';
+  role?: WorkspaceRole;
+}

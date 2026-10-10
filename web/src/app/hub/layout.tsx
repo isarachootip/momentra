@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { User, Link2, BookOpen, CreditCard, ExternalLink, Sparkles } from 'lucide-react';
+import { User, Link2, BookOpen, CreditCard, ExternalLink, Sparkles, Users } from 'lucide-react';
 
 export default function HubLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -17,6 +17,7 @@ export default function HubLayout({ children }: { children: React.ReactNode }) {
 
   const tabs = [
     { href: '/hub/profile', label: 'แก้ไขโปรไฟล์', icon: User },
+    { href: '/hub/members', label: 'จัดการสมาชิก & ทีม', icon: Users },
     { href: '/hub/links', label: 'ลิงก์โซเชียล', icon: Link2 },
     { href: '/hub/km', label: 'คลังความรู้ (KM)', icon: BookOpen },
     { href: '/hub/billing', label: 'แพ็กเกจ & โควตา', icon: CreditCard },

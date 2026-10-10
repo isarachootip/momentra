@@ -10,6 +10,8 @@ import { searchRoutes } from './modules/search/search.routes.js';
 import { timelineRoutes } from './modules/timeline/timeline.routes.js';
 import { personalRoutes } from './modules/personal/personal.routes.js';
 import { billingRoutes } from './modules/billing/billing.routes.js';
+import { workspaceRoutes } from './modules/workspaces/workspace.routes.js';
+import { userRoutes } from './modules/users/user.routes.js';
 import { closeDatabasePool } from './db/pool.js';
 
 export function buildApp(): FastifyInstance {
@@ -40,6 +42,8 @@ export function buildApp(): FastifyInstance {
   app.register(timelineRoutes);
   app.register(personalRoutes);
   app.register(billingRoutes);
+  app.register(workspaceRoutes);
+  app.register(userRoutes);
 
   // 6. Graceful Shutdown Hook
   app.addHook('onClose', async () => {

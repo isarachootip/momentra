@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { User, Check, AlertCircle, Save, Globe, Eye } from 'lucide-react';
+import { User, Check, AlertCircle, Save, Globe } from 'lucide-react';
+import { HubAvatarUploader } from '@/components/personal-hub/hub-avatar-uploader';
 
 export default function HubProfilePage() {
   const [username, setUsername] = useState('drmum');
@@ -123,18 +124,8 @@ export default function HubProfilePage() {
           </div>
         </div>
 
-        {/* Avatar URL Field */}
-        <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-            URL รูปโปรไฟล์ (Avatar Image URL)
-          </label>
-          <input
-            type="url"
-            value={avatarUrl}
-            onChange={(e) => setAvatarUrl(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm text-slate-900 focus:border-rose-800 focus:outline-none"
-          />
-        </div>
+        {/* Avatar Uploader Field */}
+        <HubAvatarUploader avatarUrl={avatarUrl} onChange={setAvatarUrl} />
 
         {/* Published Toggle */}
         <div className="flex items-center justify-between rounded-xl bg-slate-50 p-4 border border-slate-200">

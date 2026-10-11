@@ -3,7 +3,7 @@
 import React, { useRef, useEffect } from 'react';
 import Link from 'next/link';
 import type { CurrentUser } from '@/lib/user-store';
-import { User, KeyRound, Users, LogOut, Shield } from 'lucide-react';
+import { User, KeyRound, Users, LogOut, Shield, ShieldCheck } from 'lucide-react';
 
 interface UserDropdownMenuProps {
   user: CurrentUser;
@@ -21,6 +21,7 @@ export function UserDropdownMenu({
   onLogout,
 }: UserDropdownMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const isSysAdminUser = user.role === 'sysadmin';
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -60,12 +61,23 @@ export function UserDropdownMenu({
         </div>
         <div className="mt-2 flex items-center gap-1.5 text-[10px] font-semibold text-rose-900 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100 w-fit">
           <Shield className="h-3 w-3" />
-          <span>เจ้าของระบบ (Owner)</span>
+          <span>{isSysAdminUser ? '👑 Platform SysAdmin (สูงสุด)' : 'เจ้าของเพจ (Page Owner)'}</span>
         </div>
       </div>
 
       {/* Menu Options */}
       <div className="space-y-0.5 text-xs text-slate-700">
+        {isSysAdminUser && (
+          <Link
+            href="/admin/users"
+            onClick={onClose}
+            className="flex items-center gap-2.5 rounded-xl px-3 py-2 font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 transition-colors border border-amber-200"
+          >
+            <ShieldCheck className="h-4 w-4 text-amber-700" />
+            <span>SysAdmin Control Center</span>
+          </Link>
+        )}
+
         <Link
           href="/hub/profile"
           onClick={onClose}
@@ -93,7 +105,7 @@ export function UserDropdownMenu({
           className="flex items-center gap-2.5 rounded-xl px-3 py-2 font-medium hover:bg-slate-100 transition-colors"
         >
           <Users className="h-4 w-4 text-slate-500" />
-          <span>จัดการสมาชิกในทีม</span>
+          <span>จัดการสมาชิกในทีมเพจ</span>
         </Link>
       </div>
 

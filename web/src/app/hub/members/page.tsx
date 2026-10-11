@@ -138,13 +138,13 @@ export default function MembersPage() {
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
         <div className="flex items-center gap-2 font-semibold text-slate-900 mb-1">
           <ShieldCheck className="h-4 w-4 text-rose-800" />
-          <span>การแบ่งระดับสิทธิ์ตามมาตรฐานจดหมายเหตุ (Momentra RBAC)</span>
+          <span>การแบ่งระดับสิทธิ์ทีมงานช่วยดูแลเพจ (Facebook-style Page Roles)</span>
         </div>
         <p className="text-[11px] leading-relaxed">
-          • <strong>Owner:</strong> มีอำนาจสูงสุด สามารถจัดการบัญชี รหัสผ่าน จัดการสมาชิกและลบ Workspace ได้ | 
-          • <strong>Admin:</strong> เชิญสมาชิก จัดการสิทธิ์ และกู้คืนไฟล์จากถังขยะได้ | 
-          • <strong>Contributor:</strong> สามารถอัปโหลด เพิ่ม และแก้ไขเนื้อหาจดหมายเหตุได้ | 
-          • <strong>Viewer:</strong> ค้นหาและดูไทม์ไลน์ได้เพียงอย่างเดียว
+          • <strong>Page Owner:</strong> เจ้าของเพจ มีอำนาจสูงสุดในการบริหารเพจและคลังความรู้นี้ | 
+          • <strong>Page Admin:</strong> ผู้ช่วยดูแลเพจ สามารถเชิญสมาชิกและจัดการสิทธิ์ทีมงานในเพจได้ | 
+          • <strong>Page Editor (Contributor):</strong> ผู้ช่วยลงเนื้อหา สามารถอัปโหลดภาพ วิดีโอ บทความ และบันทึกไทม์ไลน์ได้ | 
+          • <strong>Page Viewer:</strong> สิทธิ์เข้าดูข้อมูลภายในและไทม์ไลน์ได้อย่างเดียว
         </p>
       </div>
 

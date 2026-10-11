@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Landmark, Building2, ChevronDown } from 'lucide-react';
+import { Landmark, Building2, ChevronDown, ShieldCheck } from 'lucide-react';
 import { getCurrentUser, subscribeToUser, logoutUser, type CurrentUser } from '@/lib/user-store';
 import { UserDropdownMenu } from './user-dropdown-menu';
 import { ChangePasswordModal } from './change-password-modal';
@@ -40,25 +41,38 @@ export function WorkspaceHeader({
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Brand */}
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-900 text-white shadow-xs">
-              <Landmark className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-lg font-black tracking-tight text-slate-900">Momentra</span>
-                <span className="rounded-md bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-800">
-                  HDAM
-                </span>
+            <Link href="/" className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-900 text-white shadow-xs">
+                <Landmark className="h-5 w-5" />
               </div>
-              <p className="text-[11px] text-slate-500">Historical Digital Asset Management</p>
-            </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-lg font-black tracking-tight text-slate-900">Momentra</span>
+                  <span className="rounded-md bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-800">
+                    HDAM
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500">Historical Digital Asset Management</p>
+              </div>
+            </Link>
           </div>
 
           {/* Workspace Switcher & User Profile */}
           <div className="flex items-center gap-4">
+            {/* SysAdmin Quick Access */}
+            {currentUser.role === 'sysadmin' && (
+              <Link
+                href="/admin/users"
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-900 border border-amber-300 hover:bg-amber-100 transition-colors shadow-2xs"
+              >
+                <ShieldCheck className="h-3.5 w-3.5 text-amber-700" />
+                <span>SysAdmin Portal</span>
+              </Link>
+            )}
+
             <div className="hidden sm:flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-700">
               <Building2 className="h-4 w-4 text-rose-800" />
-              <span className="font-semibold max-w-[220px] truncate">{currentWorkspace}</span>
+              <span className="font-semibold max-w-[200px] truncate">{currentWorkspace}</span>
               <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
             </div>
 
